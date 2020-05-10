@@ -1,2 +1,3 @@
 objects/
+!objects/.gitkeep
 .ipynb_checkpoints/
