@@ -1,0 +1,6 @@
+To run level 2
+
+Pls reply "CircusCharlie-Nes" folder in python package folder
+My path in Mac is "/Users/binbin/opt/anaconda3/lib/python3.7/site-packages/retro/data/stable/CircusCharlie-Nes"
+
+In windows, maybe slightly different
