@@ -1,5 +1,6 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 import retro
 
@@ -72,11 +73,15 @@ def trainNetwork(model,game_state,observe=False):
 	do_nothing = np.zeros(Key_num)
 	#do_nothing[0] =1 #0 => do nothing,
 					 #1=> jump
-	
-	x_t, r_0, terminal = game_state.get_state(do_nothing,actions_df,scores_df,loss_df) # get next step after performing the action
-	
-	s_t = np.stack((x_t, x_t, x_t, x_t), axis=2) # stack 4 images to create placeholder input
 		
+	
+	x_t, r_0, terminal, info = game_state.get_state(do_nothing,actions_df,scores_df,loss_df) # get next step after performing the action
+	
+
+	s_t = np.stack((x_t, x_t, x_t, x_t), axis=2) # stack 4 images to create placeholder input
+	
+
+	
 	s_t = s_t.reshape(1, s_t.shape[0], s_t.shape[1], s_t.shape[2])  #1*20*40*4
 	
 	initial_state = s_t 
@@ -104,15 +109,22 @@ def trainNetwork(model,game_state,observe=False):
 		action_index = 0
 		r_t = 0 #reward at 4
 		a_t = np.zeros(Key_num) # action at t
+		a_t_fill = [0,0,0,0,0,0,0,1,0]
 		#run, jump
 		
+		
 		#choose an action epsilon greedy
+		
 		if t % FRAME_PER_ACTION == 0: #parameter to skip frames for actions
+			
 			if  random.random() <= epsilon: #randomly explore an action
 				print("----------Random Action----------")
 				#action_index = random.randrange(ACTIONS)
-				a_t = random.choice([[0,0,0,0,0,0,0,1,0], [0,0,0,0,0,0,0,1,1]])
-				
+				action_index = random.choice([0,1])
+				a_t_all = [[0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,1,1]]
+				#a_t = random.choice([[0,0,0,0,0,0,0,1,0], [0,0,0,0,0,0,0,1,1]])
+				a_t = a_t_all[action_index]
+
 			else: # predict the output
 				q = model.predict(s_t)       # input a stack of 4 images, get the prediction
 				print(q)
@@ -120,20 +132,37 @@ def trainNetwork(model,game_state,observe=False):
 				action_index = max_Q
 				a_t_all = [[0,0,0,0,0,0,0,1,0], [0,0,0,0,0,0,0,1,1]]
 				a_t = a_t_all[action_index]       # run, jump
+			   
+		terminal_transfer = False
+		
+		for i in range(0, 5):
+			A1, A2, A3, A4 = game_state.get_state(a_t_fill,actions_df,scores_df,loss_df)
+			if A3 == True:
+				terminal_transfer = True
+
 				
 		#We reduced the epsilon (exploration parameter) gradually
 		if epsilon > FINAL_EPSILON and t > OBSERVE:
 			epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE 
 
 		#run the selected action and observed next state and reward
-		x_t1, r_t, terminal = game_state.get_state(a_t,actions_df,scores_df,loss_df)
-				
+		x_t1, r_t, terminal, info = game_state.get_state(a_t,actions_df,scores_df,loss_df)
+		
+		if terminal == False:
+			terminal = terminal_transfer
+			
+		#if a_t[8]==1:
+		#    for ii in range(0, 30):
+		#        x_t1, r_t, terminal, info = game_state.get_state([0,0,0,0,0,0,0,1,1])
+
+			
 		print('fps: {0}'.format(1 / (time.time()-last_time))) # helpful for measuring frame rate
 		last_time = time.time()
 		x_t1 = x_t1.reshape(1, x_t1.shape[0], x_t1.shape[1], 1) #1x20x40x1
 		
 		s_t1 = np.append(x_t1, s_t[:, :, :, :3], axis=3) # append the new image to input stack and remove the first one
-			
+		
+		
 		# store the transition in D
 		D.append((s_t, action_index, r_t, s_t1, terminal))
 		if len(D) > REPLAY_MEMORY:
@@ -174,7 +203,7 @@ def trainNetwork(model,game_state,observe=False):
 		t = t + 1
 		
 		# save progress every 1000 iterations
-		if t % 1000 == 0:
+		if t % 100 == 0:
 			print("Now we save model")
 			#game_state._game.pause() #pause game while saving to filesystem
 			model.save_weights("model.h5", overwrite=True)

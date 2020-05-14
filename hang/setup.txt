@@ -1,0 +1,14 @@
+pip install gym-retro keras tensorflow pillow opencv-python pandas plaidml-keras matplotlib
+python -m retro.import rom_path
+
+plaidml-setup
+
+
+First time run:
+python initialCache.py
+
+Train:
+python training.py
+
+Visualize:
+python visualize.py

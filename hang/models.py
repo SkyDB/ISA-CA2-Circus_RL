@@ -19,7 +19,8 @@ ACTIONS = para.ACTIONS
 def buildmodel(loss_file_path):
 	print("Now we build the model")
 	model = Sequential()
-	model.add(Conv2D(32, (8, 8), padding='same',strides=(4, 4),input_shape=(img_cols,img_rows,img_channels)))  #80*80*4
+	model.add(Conv2D(32, (8, 8), padding='same',strides=(4, 4),input_shape=(img_cols,img_rows,img_channels)))  
+	#80*80*4
 	model.add(MaxPooling2D(pool_size=(2,2)))
 	model.add(Activation('relu'))
 	model.add(Conv2D(64, (4, 4),strides=(2, 2),  padding='same'))
