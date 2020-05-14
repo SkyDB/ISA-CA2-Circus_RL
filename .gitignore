@@ -1,3 +1,6 @@
 !objects/.gitkeep
 objects/
 .ipynb_checkpoints/
+hang/classes/__pycache__/
+hang/__pycache__/
+hang/CircusCharlie-Nes/.DS_Store
